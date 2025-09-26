@@ -1,29 +1,33 @@
-import Head from "next/head";
+// pages/tag/[tag].js
+import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import VideoCard from "@/components/VideoCard";
 import { videos } from "@/data/videos";
 
-export async function getStaticPaths() {
-  const allTags = [...new Set(videos.flatMap(v => v.tags || []))];
-  return { paths: allTags.map(t => ({ params: { tag: t } })), fallback: false };
-}
+export default function TagPage() {
+  const router = useRouter();
+  const { tag } = router.query;
 
-export async function getStaticProps({ params }) {
-  const tag = params.tag;
-  const list = videos.filter(v => v.tags?.includes(tag));
-  return { props: { tag, list } };
-}
+  // lọc video có tag và có video_url hợp lệ
+  const filtered = videos.filter(
+    (v) =>
+      v.tags &&
+      v.video_url && // chỉ lấy video có URL
+      v.tags.toLowerCase().includes(tag?.toLowerCase())
+  );
 
-export default function TagPage({ tag, list }) {
   return (
     <Layout>
-      <Head>
-        <title>Videos tagged "{tag}" — Video Gallery</title>
-      </Head>
-      <h1 className="text-3xl font-bold mb-6">Tag: {tag}</h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {list.map(v => <VideoCard key={v.slug} video={v} />)}
-      </div>
+      <h1 className="text-2xl font-bold mb-6">Tag: {tag}</h1>
+      {filtered.length === 0 ? (
+        <p className="text-gray-500">No videos found for this tag.</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {filtered.map((v, i) => (
+            <VideoCard key={i} video={v} />
+          ))}
+        </div>
+      )}
     </Layout>
   );
 }
