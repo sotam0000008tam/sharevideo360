@@ -1,20 +1,21 @@
-import Link from "next/link";
-import Image from "next/image";
-
 export default function VideoCard({ video }) {
   return (
-    <Link href={`/videos/${video.slug}`} className="block card overflow-hidden">
-      <div className="relative w-full aspect-video">
-        <Image src={video.thumbnail} alt={video.title} fill sizes="(max-width:768px) 100vw, 33vw" className="object-cover" />
-      </div>
-      <div className="p-4">
-        <h3 className="font-semibold line-clamp-2">{video.title}</h3>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {video.tags?.slice(0,3).map(tag => (
-            <span key={tag} className="badge">{tag}</span>
-          ))}
-        </div>
-      </div>
-    </Link>
+    <div className="border rounded-lg p-4 shadow">
+      <h2 className="text-xl font-semibold">{video.title}</h2>
+      <p className="text-gray-600">{video.description}</p>
+
+      <iframe
+        className="w-full h-64 mt-3"
+        src={
+          video.platform === "YouTube"
+            ? video.video_url.replace("watch?v=", "embed/")
+            : video.video_url
+        }
+        frameBorder="0"
+        allowFullScreen
+      ></iframe>
+
+      <div className="mt-2 text-sm text-blue-600">Tags: {video.tags}</div>
+    </div>
   );
 }
