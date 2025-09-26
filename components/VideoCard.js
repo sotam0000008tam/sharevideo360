@@ -1,21 +1,28 @@
+// components/VideoCard.js
 export default function VideoCard({ video }) {
-  return (
-    <div className="border rounded-lg p-4 shadow">
-      <h2 className="text-xl font-semibold">{video.title}</h2>
-      <p className="text-gray-600">{video.description}</p>
+  // Kiểm tra có video_url hợp lệ không
+  if (!video.video_url) {
+    return null; // bỏ qua render video hỏng
+  }
 
+  let embedUrl = video.video_url;
+
+  if (video.platform === "YouTube" && video.video_url.includes("watch?v=")) {
+    embedUrl = video.video_url.replace("watch?v=", "embed/");
+  }
+
+  return (
+    <div className="border rounded-lg shadow-md p-4 bg-white">
+      <h2 className="font-bold text-lg mb-2">{video.title}</h2>
       <iframe
-        className="w-full h-64 mt-3"
-        src={
-          video.platform === "YouTube"
-            ? video.video_url.replace("watch?v=", "embed/")
-            : video.video_url
-        }
+        src={embedUrl}
+        title={video.title}
+        className="w-full aspect-video mb-3"
         frameBorder="0"
         allowFullScreen
       ></iframe>
-
-      <div className="mt-2 text-sm text-blue-600">Tags: {video.tags}</div>
+      <p className="text-sm text-gray-600 mb-2">{video.description}</p>
+      <p className="text-xs text-gray-400">Tags: {video.tags}</p>
     </div>
   );
 }
