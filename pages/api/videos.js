@@ -1,14 +1,14 @@
-// pages/api/videos.js
 export default async function handler(req, res) {
   try {
-    const SHEET_ID = "1kqaz5DmptluTMeq6IZF4tRjY3roWYSgH4Na-G-UZp1k"; // thay bằng ID thật
-    const SHEET_NAME = "Form Responses 1";
+    const SHEET_ID = "1kqaz5DmptluTMeq6IZF4tRjY3roWYSgH4Na-G-UZp1k";
+    const SHEET_NAME = "Form Responses 1"; // đổi đúng tên tab
     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}`;
 
     const response = await fetch(url);
     const text = await response.text();
 
-    // Nếu không chứa JSON hợp lệ
+    console.log("RAW GOOGLE SHEET RESPONSE:", text.substring(0, 300));
+
     if (!text.includes("google.visualization.Query.setResponse")) {
       throw new Error("Invalid Google Sheets response");
     }
@@ -29,8 +29,6 @@ export default async function handler(req, res) {
     res.status(200).json(rows);
   } catch (err) {
     console.error("API /videos error:", err);
-
-    // ✅ fallback: vẫn trả về dữ liệu mẫu để website load được
     res.status(200).json([
       {
         title: "Welcome to ShareVideo360 🎥",
