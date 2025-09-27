@@ -1,23 +1,21 @@
+// pages/api/videos.js
 export default async function handler(req, res) {
   try {
-    const SHEET_ID = "1kqaz5DmptluTMeq6IZF4tRjY3roWYSgH4Na-G-UZp1k";
-    const SHEET_NAME = "Form Responses 1"; // đổi đúng tên tab
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}`;
+    // Link JSON từ Google Sheets (Publish to web → đổi pubhtml thành gviz/tq)
+    const SHEET_URL =
+      "https://docs.google.com/spreadsheets/d/e/2PACX-1vTbaiQwCJAPsg2XVIAhkq9HgVRgwEd0mcPpfOn_VTq9_Dn71_S_ZzQ7b-xU9WMda3V9G_XEq8maApQK/gviz/tq?tqx=out:json&sheet=Form%20Responses%201";
 
-    const response = await fetch(url);
+    // Lấy dữ liệu từ Google Sheets
+    const response = await fetch(SHEET_URL);
     const text = await response.text();
 
-    console.log("RAW GOOGLE SHEET RESPONSE:", text.substring(0, 300));
+    // Xử lý JSON (Google trả về dạng đặc biệt)
+    const json = JSON.parse(text.replace(/^[^\{]+/, "").replace(/\);?$/, ""));
 
-    if (!text.includes("google.visualization.Query.setResponse")) {
-      throw new Error("Invalid Google Sheets response");
-    }
+    const rows = json.table.rows;
 
-    const json = JSON.parse(
-      text.substring(text.indexOf("{"), text.lastIndexOf("}") + 1)
-    );
-
-    const rows = json.table.rows.map((row) => ({
+    // Map thành video objects
+    const videos = rows.map((row) => ({
       title: row.c[0]?.v || "",
       description: row.c[1]?.v || "",
       platform: row.c[2]?.v || "",
@@ -26,18 +24,9 @@ export default async function handler(req, res) {
       createdAt: row.c[5]?.v || "",
     }));
 
-    res.status(200).json(rows);
+    res.status(200).json(videos);
   } catch (err) {
     console.error("API /videos error:", err);
-    res.status(200).json([
-      {
-        title: "Welcome to ShareVideo360 🎥",
-        description: "Hiện tại chưa có video nào từ Google Sheets. Đây là dữ liệu demo.",
-        platform: "YouTube",
-        tags: "demo, sample",
-        video_url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-        createdAt: new Date().toISOString(),
-      },
-    ]);
+    res.status(500).json({ error: "Failed to fetch videos" });
   }
 }
