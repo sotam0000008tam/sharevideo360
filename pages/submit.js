@@ -1,42 +1,6 @@
 import Layout from "@/components/Layout";
-import { useState } from "react";
 
 export default function Submit() {
-  const [status, setStatus] = useState("");
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setStatus("Submitting...");
-
-    const formData = {
-      platform: e.target.platform.value,
-      video_url: e.target.video_url.value,
-      title: e.target.title.value,
-      description: e.target.description.value,
-      tags: e.target.tags.value,
-    };
-
-    try {
-      const res = await fetch("/api/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      const result = await res.json();
-      if (res.ok) {
-        setStatus("✅ Submitted successfully!");
-        e.target.reset();
-      } else {
-        console.error(result);
-        setStatus("⚠️ Error: " + (result.error || "Unknown"));
-      }
-    } catch (err) {
-      console.error(err);
-      setStatus("⚠️ Network error.");
-    }
-  }
-
   return (
     <Layout>
       <h1 className="text-2xl font-bold mb-4">Submit a Video</h1>
@@ -44,10 +8,18 @@ export default function Submit() {
         Share your favorite YouTube or Rumble video with us. We’ll review and publish it if appropriate.
       </p>
 
-      <form onSubmit={handleSubmit} className="space-y-4 max-w-xl">
+      <form
+        action="/api/submit"
+        method="POST"
+        className="space-y-4 max-w-xl"
+      >
         <div>
           <label className="block mb-1 font-medium">Video Platform</label>
-          <select name="platform" className="border rounded w-full p-2" required>
+          <select
+            name="platform"
+            className="border rounded w-full p-2"
+            required
+          >
             <option value="">Select</option>
             <option value="YouTube">YouTube</option>
             <option value="Rumble">Rumble</option>
@@ -55,9 +27,9 @@ export default function Submit() {
         </div>
 
         <div>
-          <label className="block mb-1 font-medium">Video URL or ID</label>
+          <label className="block mb-1 font-medium">Video URL</label>
           <input
-            type="text"
+            type="url"
             name="video_url"
             className="border rounded w-full p-2"
             placeholder="https://youtube.com/watch?v=..."
@@ -102,8 +74,6 @@ export default function Submit() {
           Submit
         </button>
       </form>
-
-      {status && <p className="mt-4">{status}</p>}
     </Layout>
   );
 }
