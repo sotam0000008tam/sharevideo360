@@ -1,34 +1,44 @@
-// pages/api/videos.js
-import { videos as localVideos } from "@/data/videos";
-
 export default async function handler(req, res) {
   try {
-    const SHEET_ID = "1FAIpQLSddiNFexdyZA0ZSi6e9rqAIfwzL7ozFSv-wrP0euVlJp0bNvg"; // thay thật
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
+    const SHEET_ID = "1FAIpQLSddiNFexdyZA0ZSi6e9rqAIfwzL7ozFSv-wrP0euVlJp0bNvg"; // Thay bằng Google Sheet ID thật
+    const SHEET_NAME = "Form Responses 1"; // Tên sheet, mặc định là Form Responses 1
+    const API_KEY = process.env.AIzaSyAvEfDKZG8tNJ1r3-SAxuQWdTnPZpeTs20; // Tạo API Key trong Google Cloud Console
+
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(
+      SHEET_NAME
+    )}?key=${API_KEY}`;
 
     const response = await fetch(url);
-    if (!response.ok) throw new Error("Failed to fetch sheet");
+    if (!response.ok) throw new Error("Failed to fetch Google Sheets data");
 
-    const csv = await response.text();
-    const rows = csv.split("\n").slice(1);
-    const sheetVideos = rows
-      .map((r) => {
-        const cols = r.split(",");
-        if (!cols[0]) return null;
-        return {
-          platform: cols[0],
-          video_url: cols[1],
-          title: cols[2],
-          description: cols[3],
-          tags: cols[4]?.split(";").map((t) => t.trim()) || [],
-          slug: cols[2]?.toLowerCase().replace(/\s+/g, "-"),
-        };
-      })
-      .filter(Boolean);
+    const data = await response.json();
+    const rows = data.values;
 
-    res.status(200).json(sheetVideos);
-  } catch (err) {
-    console.error("Error fetching Google Sheet:", err.message);
-    res.status(200).json(localVideos); // fallback nếu lỗi
+    if (!rows || rows.length < 2) {
+      return res.status(200).json([]);
+    }
+
+    // Dòng đầu tiên là header, nên bỏ qua
+    const headers = rows[0];
+    const videos = rows.slice(1).map((row, index) => {
+      const entry = {};
+      headers.forEach((key, i) => {
+        entry[key.toLowerCase().replace(/\s+/g, "_")] = row[i] || "";
+      });
+      return {
+        id: index + 1,
+        title: entry.title,
+        description: entry.description,
+        platform: entry.platform,
+        tags: entry.tags,
+        video_url: entry.video_url,
+        slug: entry.title ? entry.title.toLowerCase().replace(/\s+/g, "-") : `video-${index + 1}`,
+      };
+    });
+
+    res.status(200).json(videos);
+  } catch (error) {
+    console.error("Error fetching videos:", error);
+    res.status(500).json({ error: error.message });
   }
 }
