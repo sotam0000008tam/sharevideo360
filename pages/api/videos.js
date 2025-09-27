@@ -1,27 +1,25 @@
 // pages/api/videos.js
+import Papa from "papaparse";
+
 export default async function handler(req, res) {
   try {
-    // Link JSON từ Google Sheets (Publish to web → đổi pubhtml thành gviz/tq)
-    const SHEET_URL =
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vTbaiQwCJAPsg2XVIAhkq9HgVRgwEd0mcPpfOn_VTq9_Dn71_S_ZzQ7b-xU9WMda3V9G_XEq8maApQK/gviz/tq?tqx=out:json&sheet=Form%20Responses%201";
+    // ✅ CSV link mới của bạn
+    const csvUrl =
+      "https://docs.google.com/spreadsheets/d/e/2PACX-1vTbaiQwCJAPsg2XVIAhkq9HgVRgwEd0mcPpfOn_VTq9_Dn71_S_ZzQ7b-xU9WMda3V9G_XEq8maApQK/pub?gid=812465050&single=true&output=csv";
 
-    // Lấy dữ liệu từ Google Sheets
-    const response = await fetch(SHEET_URL);
-    const text = await response.text();
+    const response = await fetch(csvUrl);
+    const csvText = await response.text();
 
-    // Xử lý JSON (Google trả về dạng đặc biệt)
-    const json = JSON.parse(text.replace(/^[^\{]+/, "").replace(/\);?$/, ""));
+    const parsed = Papa.parse(csvText, { header: true });
+    const rows = parsed.data.filter((r) => r.Title); // bỏ dòng rỗng
 
-    const rows = json.table.rows;
-
-    // Map thành video objects
-    const videos = rows.map((row) => ({
-      title: row.c[0]?.v || "",
-      description: row.c[1]?.v || "",
-      platform: row.c[2]?.v || "",
-      tags: row.c[3]?.v || "",
-      video_url: row.c[4]?.v || "",
-      createdAt: row.c[5]?.v || "",
+    const videos = rows.map((r) => ({
+      title: r.Title,
+      description: r.Description,
+      platform: r.Platform,
+      tags: r.Tags,
+      video_url: r["Video URL"],
+      createdAt: r.Timestamp,
     }));
 
     res.status(200).json(videos);
