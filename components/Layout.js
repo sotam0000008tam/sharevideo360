@@ -53,8 +53,8 @@ export default function Layout({ children }) {
           <div>
             <h3 className="text-white font-semibold mb-2">About</h3>
             <p className="text-sm leading-relaxed">
-              ShareVideo360 là thư viện cộng đồng tuyển chọn những video hay nhất từ
-              YouTube và Rumble. Hãy lưu, chia sẻ và khám phá những video bạn yêu thích.
+              ShareVideo360 is a community library that curates the best videos
+              from YouTube and Rumble. Save, share, and explore the videos you love.
             </p>
           </div>
           <div>
