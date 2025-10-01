@@ -1,34 +1,34 @@
-// pages/videos/[slug].js
 import { useRouter } from "next/router";
 import useSWR from "swr";
+import { useEffect, useState } from "react";
 import Layout from "../../components/Layout";
-import { toEmbedUrl, makeSlug, belongsToCategory, getThumbnail, slugify } from "../../lib/videoUtils";
+import { toEmbedUrl, makeSlug, getThumbnail, belongsToCategory, slugify } from "../../lib/videoUtils";
 import { videos as staticVideos } from "../../data/videos";
 import Head from "next/head";
 import VideoCard from "../../components/VideoCard";
+import Link from "next/link";
 
 const fetcher = (u) => fetch(u).then((r) => r.json());
 
 export default function VideoDetail() {
   const router = useRouter();
   const { slug } = router.query;
-
-  // Fetch the dynamic list of videos.  We'll merge this list with
-  // the local static dataset to ensure that videos defined locally
-  // can still be displayed if they are not returned by the API.
-  const { data, error } = useSWR("/api/videos", fetcher);
-
-  if (error) return <Layout>Error loading video.</Layout>;
-
-  // Combine the API-provided list (if any) with the static dataset.
-  const list = Array.isArray(data) && data.length > 0
-    ? [...data, ...staticVideos]
-    : staticVideos;
-
-  // Find the video by slug within the combined list.  Using the
-  // combined list ensures that videos from the static dataset are
-  // available even if the API call fails or does not include them.
+  const { data } = useSWR("/api/videos", fetcher);
+  const list = Array.isArray(data) && data.length > 0 ? [...data, ...staticVideos] : staticVideos;
   const video = list.find((v) => makeSlug(v) === slug);
+
+  // Likes stored per-user in localStorage
+  const [likes, setLikes] = useState(0);
+  useEffect(() => {
+    if (!slug) return;
+    const saved = parseInt(localStorage.getItem(`likes_${slug}`) || "0", 10);
+    setLikes(saved);
+  }, [slug]);
+  function handleLike() {
+    const newLikes = likes + 1;
+    setLikes(newLikes);
+    localStorage.setItem(`likes_${slug}`, newLikes);
+  }
 
   if (!video) {
     return (
@@ -38,28 +38,11 @@ export default function VideoDetail() {
     );
   }
 
-  // Embed URL
-  const embedUrl = toEmbedUrl(video);
-
-  // Compute a thumbnail for social sharing.  If a YouTube thumbnail is
-  // available it will be used; otherwise a placeholder is returned.
-  const thumbnail = getThumbnail(video);
-
-  // Determine related videos.  If the current video has an explicit
-  // category, we use that to find other videos in the same category.
-  // Otherwise we fall back to tag matching.  Tag matching is case
-  // insensitive and works whether tags are a comma‐separated string or
-  // an array.
-  const currentCategorySlug = video?.category
-    ? slugify(video.category)
-    : null;
+  // Related videos by category or tags
+  const currentCategorySlug = video.category ? slugify(video.category) : null;
   function shareTags(a, b) {
-    const atags = Array.isArray(a?.tags)
-      ? a.tags
-      : (a?.tags || "").split(/[,\s]+/);
-    const btags = Array.isArray(b?.tags)
-      ? b.tags
-      : (b?.tags || "").split(/[,\s]+/);
+    const atags = Array.isArray(a?.tags) ? a.tags : (a?.tags || "").split(/[\\s,]+/);
+    const btags = Array.isArray(b?.tags) ? b.tags : (b?.tags || "").split(/[\\s,]+/);
     return atags.some((t) => {
       const tag = t.trim().toLowerCase();
       return tag && btags.some((t2) => t2.trim().toLowerCase() === tag);
@@ -67,45 +50,76 @@ export default function VideoDetail() {
   }
   let related;
   if (currentCategorySlug) {
-    related = list.filter(
-      (v) => v !== video && belongsToCategory(v, currentCategorySlug)
-    );
+    related = list.filter((v) => v !== video && belongsToCategory(v, currentCategorySlug));
   } else {
     related = list.filter((v) => v !== video && shareTags(v, video));
   }
   related = related.slice(0, 6);
 
+  // Build share URLs
+  const currentUrl = typeof window !== "undefined" ? window.location.href : "";
+  const twitterShare = `https://twitter.com/intent/tweet?url=${encodeURIComponent(currentUrl)}&text=${encodeURIComponent(video.title)}`;
+  const facebookShare = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`;
+
+  const thumbnail = getThumbnail(video);
+  const embedUrl = toEmbedUrl(video);
+
   return (
     <Layout>
-      {/* Dynamic head tags for SEO and social media.  These help Google
-          understand the content of your page and can improve AdSense
-          approval. */}
       <Head>
         <title>{video.title} — ShareVideo360</title>
-        <meta name="description" content={video.description || ''} />
-        <meta property="og:title" content={video.title} />
-        <meta property="og:description" content={video.description || ''} />
-        {thumbnail && <meta property="og:image" content={thumbnail} />}
-        <meta property="og:type" content="video.other" />
+        <meta name="description" content={video.description || ""} />
+        {/* Schema.org VideoObject for SEO */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "VideoObject",
+              name: video.title,
+              description: video.description || "",
+              thumbnailUrl: thumbnail,
+              uploadDate: video.timestamp,
+              contentUrl: video.video_url,
+              embedUrl: embedUrl,
+            }),
+          }}
+        />
       </Head>
+
       <div className="max-w-4xl mx-auto">
-        {/* Video Player */}
+        {/* Video player */}
         <div className="aspect-video mb-4">
           <iframe
             src={embedUrl}
             title={video.title}
             allowFullScreen
+            loading="lazy"
             className="w-full h-full rounded-lg border"
           ></iframe>
         </div>
 
-        {/* Title + Description */}
+        {/* Title and description */}
         <h1 className="text-2xl font-bold mb-2">{video.title}</h1>
-        <p className="text-gray-700 mb-6 whitespace-pre-line">
-          {video.description}
-        </p>
+        <p className="text-gray-700 mb-4 whitespace-pre-line">{video.description}</p>
 
-        {/* Related Videos */}
+        {/* Likes and share buttons */}
+        <div className="flex items-center gap-4 mb-6">
+          <button
+            onClick={handleLike}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            👍 Like ({likes})
+          </button>
+          <a href={facebookShare} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-sm">
+            Share on Facebook
+          </a>
+          <a href={twitterShare} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-sm">
+            Share on X/Twitter
+          </a>
+        </div>
+
+        {/* Related videos */}
         {related.length > 0 && (
           <section>
             <h2 className="text-xl font-bold mb-3">Related Videos</h2>
