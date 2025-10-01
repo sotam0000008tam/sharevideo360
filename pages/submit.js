@@ -38,10 +38,10 @@ export default function Submit() {
       <div className="mb-6 p-4 bg-gray-100 border rounded-md">
         <h2 className="text-xl font-semibold mb-2">Guidelines for submitting</h2>
         <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-          <li>Chỉ gửi các video chất lượng cao, thời lượng dưới 10 phút, phù hợp với mọi lứa tuổi.</li>
-          <li>Cung cấp tiêu đề rõ ràng và ít nhất một thẻ (tag) mô tả.</li>
-          <li>Không gửi video có nội dung vi phạm bản quyền hoặc yêu cầu tài khoản trả phí.</li>
-          <li>Thêm mô tả ngắn (200–300 từ) tóm tắt nội dung và nêu lý do bạn thấy video này hay.</li>
+          <li>Only submit high-quality videos that are under 10 minutes and appropriate for all ages.</li>
+          <li>Provide a clear title and at least one descriptive tag.</li>
+          <li>Do not submit videos that violate copyright or require a paid account to view.</li>
+          <li>Add a short description (200–300 words) summarizing the content and explaining why you think this video is great.</li>
         </ul>
       </div>
 
